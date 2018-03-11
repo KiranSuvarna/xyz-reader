@@ -6,7 +6,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.Loader;
-import android.content.res.Resources;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.support.v4.widget.SwipeRefreshLayout;
@@ -17,8 +16,6 @@ import android.support.v7.widget.Toolbar;
 import android.text.Html;
 import android.text.format.DateUtils;
 import android.util.Log;
-import android.util.TypedValue;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
@@ -28,7 +25,6 @@ import com.example.xyzreader.R;
 import com.example.xyzreader.data.ArticleLoader;
 import com.example.xyzreader.data.ItemsContract;
 import com.example.xyzreader.data.UpdaterService;
-import com.squareup.picasso.Picasso;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -42,7 +38,7 @@ import java.util.GregorianCalendar;
  * activity presents a grid of items as cards.
  */
 public class ArticleListActivity extends ActionBarActivity implements
-        LoaderManager.LoaderCallbacks<Cursor> {
+        LoaderManager.LoaderCallbacks<Cursor>, SwipeRefreshLayout.OnRefreshListener {
 
     private static final String TAG = ArticleListActivity.class.toString();
     private Toolbar mToolbar;
@@ -62,23 +58,22 @@ public class ArticleListActivity extends ActionBarActivity implements
 
         mToolbar = (Toolbar) findViewById(R.id.toolbar);
 
-       Window window =  getWindow();
-       window.setStatusBarColor(getResources().getColor(R.color.theme_primary_dark, null));
+
+        Window window = getWindow();
+        window.setStatusBarColor(getResources().getColor(R.color.theme_primary_dark, null));
 
         final View toolbarContainerView = findViewById(R.id.toolbar_container);
 
         mSwipeRefreshLayout = (SwipeRefreshLayout) findViewById(R.id.swipe_refresh_layout);
 
+        mSwipeRefreshLayout.setOnRefreshListener(this);
+
         mRecyclerView = (RecyclerView) findViewById(R.id.recycler_view);
         getLoaderManager().initLoader(0, null, this);
 
         if (savedInstanceState == null) {
-            refresh();
+            onRefresh();
         }
-    }
-
-    private void refresh() {
-        startService(new Intent(this, UpdaterService.class));
     }
 
     @Override
@@ -129,6 +124,11 @@ public class ArticleListActivity extends ActionBarActivity implements
     @Override
     public void onLoaderReset(Loader<Cursor> loader) {
         mRecyclerView.setAdapter(null);
+    }
+
+    @Override
+    public void onRefresh() {
+        startService(new Intent(this, UpdaterService.class));
     }
 
     private class Adapter extends RecyclerView.Adapter<ViewHolder> {
@@ -190,13 +190,9 @@ public class ArticleListActivity extends ActionBarActivity implements
                                 + mCursor.getString(ArticleLoader.Query.AUTHOR)));
             }
 
-            //Picasso.with(getApplicationContext()).load(mCursor.getString(ArticleLoader.Query.THUMB_URL)).fit().into(holder.thumbnailView);
             holder.thumbnailView.setImageUrl(
                     mCursor.getString(ArticleLoader.Query.THUMB_URL),
                     ImageLoaderHelper.getInstance(ArticleListActivity.this).getImageLoader());
-
-
-            //holder.thumbnailView.setAspectRatio(mCursor.getFloat(ArticleLoader.Query.ASPECT_RATIO));
         }
 
         @Override
